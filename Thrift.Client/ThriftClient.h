@@ -1,8 +1,13 @@
 
-class ThriftClient
+namespace Thrift
 {
-public:
-    ThriftClient(void);
-    ~ThriftClient(void);
-};
-
+    namespace Client
+    {
+        public ref class ThriftClient sealed
+        {
+        public:
+            ThriftClient();
+            ~ThriftClient();
+        };
+    }
+}

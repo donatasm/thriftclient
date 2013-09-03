@@ -1,11 +1,16 @@
 #include "ThriftClient.h"
 
-
-ThriftClient::ThriftClient(void)
+namespace Thrift
 {
-}
+    namespace Client
+    {
+        ThriftClient::ThriftClient()
+        {
+        }
 
 
-ThriftClient::~ThriftClient(void)
-{
+        ThriftClient::~ThriftClient()
+        {
+        }
+    }
 }

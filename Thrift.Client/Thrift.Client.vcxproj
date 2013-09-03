@@ -71,6 +71,11 @@
   <ItemGroup>
     <ClCompile Include="ThriftClient.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\libuv\libuv.vcxproj">
+      <Project>{33066374-88cb-cb8d-15da-61032886329a}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

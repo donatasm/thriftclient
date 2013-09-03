@@ -5,6 +5,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libuv", "libuv\libuv.vcxpro
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Thrift.Client", "Thrift.Client\Thrift.Client.vcxproj", "{913BAF9A-4614-418E-9A07-32574B239484}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thrift.Client.Run", "Thrift.Client.Run\Thrift.Client.Run.csproj", "{45C5C088-9217-4C57-8DF8-B0C6F51962A1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -19,6 +21,10 @@ Global
 		{913BAF9A-4614-418E-9A07-32574B239484}.Debug|x64.Build.0 = Debug|x64
 		{913BAF9A-4614-418E-9A07-32574B239484}.Release|x64.ActiveCfg = Release|x64
 		{913BAF9A-4614-418E-9A07-32574B239484}.Release|x64.Build.0 = Release|x64
+		{45C5C088-9217-4C57-8DF8-B0C6F51962A1}.Debug|x64.ActiveCfg = Debug|x64
+		{45C5C088-9217-4C57-8DF8-B0C6F51962A1}.Debug|x64.Build.0 = Debug|x64
+		{45C5C088-9217-4C57-8DF8-B0C6F51962A1}.Release|x64.ActiveCfg = Release|x64
+		{45C5C088-9217-4C57-8DF8-B0C6F51962A1}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
