@@ -41,6 +41,10 @@
       <Project>{913baf9a-4614-418e-9a07-32574b239484}</Project>
       <Name>Thrift.Client</Name>
     </ProjectReference>
+    <ProjectReference Include="..\thrift\lib\csharp\src\Thrift.csproj">
+      <Project>{499EB63C-D74C-47E8-AE48-A2FC94538E9D}</Project>
+      <Name>Thrift</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -82,6 +82,9 @@
     <ProjectReference Include="..\libuv\libuv.vcxproj">
       <Project>{33066374-88cb-cb8d-15da-61032886329a}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\thrift\lib\csharp\src\Thrift.csproj">
+      <Project>{499eb63c-d74c-47e8-ae48-a2fc94538e9d}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

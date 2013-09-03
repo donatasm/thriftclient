@@ -4,7 +4,7 @@ namespace Thrift
 {
     namespace Client
     {
-        ThriftClient::ThriftClient()
+        ThriftClient::ThriftClient(ITransportFactory^ factory)
         {
             _loop = uv_loop_new();
         }
