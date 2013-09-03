@@ -27,3 +27,5 @@ _ReSharper*/
 *.DotSettings
 *.ReSharper
 packages
+*.sdf
+*.opensdf
