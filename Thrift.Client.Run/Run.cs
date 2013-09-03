@@ -9,7 +9,12 @@ namespace Thrift.Client.Run
         {
             using (var client = new ThriftClient(new TransportFactory()))
             {
-                
+                client.Send(transport =>
+                    {
+                        Console.WriteLine(transport.IsOpen);
+                    });
+
+                client.Run();
             }
         }
 
@@ -17,7 +22,7 @@ namespace Thrift.Client.Run
         {
             public TTransport Create()
             {
-                throw new NotImplementedException();
+                return new TMemoryBuffer();
             }
         }
     }
