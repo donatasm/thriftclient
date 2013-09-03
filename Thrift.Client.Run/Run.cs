@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading;
 using Thrift.Transport;
 
 namespace Thrift.Client.Run
@@ -7,15 +10,35 @@ namespace Thrift.Client.Run
     {
         private static void Main()
         {
-            using (var client = new ThriftClient(new TransportFactory()))
-            {
-                client.Send(transport =>
-                    {
-                        Console.WriteLine(transport.IsOpen);
-                    });
+            const int count = 1024 * 1024;
 
-                client.Run();
+            var client = new ThriftClient(new TransportFactory());
+
+            new Thread(client.Run) { IsBackground = true }.Start();
+
+            var elapsed = new long[count];
+
+            var totalStopwatch = Stopwatch.StartNew();
+
+            for (var i = 0; i < count; i++)
+            {
+                var stopwatch = Stopwatch.StartNew();
+                var local = i;
+                client.Send(transport => elapsed[local] = stopwatch.ElapsedMilliseconds);
             }
+
+            var totalElapsed = totalStopwatch.Elapsed;
+
+            Thread.Sleep(1000);
+
+            var elapsedAscending = elapsed.OrderBy(x => x).ToArray();
+            Console.WriteLine("50% {0}", elapsedAscending[(int)(count * .5)]);
+            Console.WriteLine("85% {0}", elapsedAscending[(int)(count * .85)]);
+            Console.WriteLine("95% {0}", elapsedAscending[(int)(count * .95)]);
+            Console.WriteLine("99% {0}", elapsedAscending[(int)(count * .99)]);
+            Console.WriteLine("Total elapsed {0}", totalElapsed);
+
+            client.Dispose();
         }
 
         private class TransportFactory : ITransportFactory
