@@ -1,3 +1,5 @@
+#include "uv.h"
+
 
 namespace Thrift
 {
@@ -8,6 +10,8 @@ namespace Thrift
         public:
             ThriftClient();
             ~ThriftClient();
+        private:
+            uv_loop_t* _loop;
         };
     }
 }

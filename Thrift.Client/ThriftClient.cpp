@@ -6,11 +6,13 @@ namespace Thrift
     {
         ThriftClient::ThriftClient()
         {
+            _loop = uv_loop_new();
         }
 
 
         ThriftClient::~ThriftClient()
         {
+            uv_loop_delete(_loop);
         }
     }
 }
