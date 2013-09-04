@@ -10,7 +10,7 @@ namespace Thrift.Client.Run
     {
         private static void Main()
         {
-            const int count = 8192;
+            const int count = 16384;
 
             var client = new ThriftClient(new TransportFactory());
 
@@ -24,7 +24,10 @@ namespace Thrift.Client.Run
             {
                 var stopwatch = Stopwatch.StartNew();
                 var local = i;
-                client.Send(transport => elapsed[local] = stopwatch.ElapsedMilliseconds);
+                client.Send(transport =>
+                    {
+                        elapsed[local] = stopwatch.ElapsedMilliseconds;
+                    });
             }
 
             var totalElapsed = totalStopwatch.Elapsed;

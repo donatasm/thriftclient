@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thrift.Client.Run", "Thrift
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thrift", "thrift\lib\csharp\src\Thrift.csproj", "{499EB63C-D74C-47E8-AE48-A2FC94538E9D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thrift.Server", "Thrift.Server\Thrift.Server.csproj", "{2E7159A3-492C-43CD-9833-7AA95A8FAF4C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +45,14 @@ Global
 		{499EB63C-D74C-47E8-AE48-A2FC94538E9D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{499EB63C-D74C-47E8-AE48-A2FC94538E9D}.Release|x64.ActiveCfg = Release|Any CPU
 		{499EB63C-D74C-47E8-AE48-A2FC94538E9D}.Release|x64.Build.0 = Release|Any CPU
+		{2E7159A3-492C-43CD-9833-7AA95A8FAF4C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E7159A3-492C-43CD-9833-7AA95A8FAF4C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E7159A3-492C-43CD-9833-7AA95A8FAF4C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2E7159A3-492C-43CD-9833-7AA95A8FAF4C}.Debug|x64.Build.0 = Debug|Any CPU
+		{2E7159A3-492C-43CD-9833-7AA95A8FAF4C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E7159A3-492C-43CD-9833-7AA95A8FAF4C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2E7159A3-492C-43CD-9833-7AA95A8FAF4C}.Release|x64.ActiveCfg = Release|Any CPU
+		{2E7159A3-492C-43CD-9833-7AA95A8FAF4C}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
