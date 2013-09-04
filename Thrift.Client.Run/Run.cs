@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using Thrift.Transport;
 
 namespace Thrift.Client.Run
 {
@@ -12,7 +11,7 @@ namespace Thrift.Client.Run
         {
             const int count = 16384;
 
-            var client = new ThriftClient(new TransportFactory());
+            var client = new ThriftClient();
 
             new Thread(client.Run) { IsBackground = true }.Start();
 
@@ -24,8 +23,10 @@ namespace Thrift.Client.Run
             {
                 var stopwatch = Stopwatch.StartNew();
                 var local = i;
-                client.Send(transport =>
+                client.Send(request =>
                     {
+                        request.WriteString("Hello, world!");
+                        request.Transport.Flush();
                         elapsed[local] = stopwatch.ElapsedMilliseconds;
                     });
             }
@@ -44,14 +45,6 @@ namespace Thrift.Client.Run
             Console.WriteLine("Total elapsed {0}", totalElapsed);
 
             client.Dispose();
-        }
-
-        private class TransportFactory : ITransportFactory
-        {
-            public TTransport Create()
-            {
-                return new TMemoryBuffer();
-            }
         }
     }
 }

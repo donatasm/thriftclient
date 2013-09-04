@@ -4,15 +4,11 @@ namespace Thrift
 {
     namespace Client
     {
-        ThriftClient::ThriftClient(ITransportFactory^ factory)
+        ThriftClient::ThriftClient()
         {
-            if (factory == nullptr)
-                throw gcnew ArgumentNullException("factory");
-
             _thisHandle = GCHandleAllocNormal(this);
 
-            _factory = factory;
-            _requests = gcnew ConcurrentQueue<TransportHandler^>();
+            _requests = gcnew ConcurrentQueue<RequestHandler^>();
 
             _loop = uv_loop_new();
 
@@ -23,7 +19,7 @@ namespace Thrift
         }
 
 
-        void ThriftClient::Send(TransportHandler^ request)
+        void ThriftClient::Send(RequestHandler^ request)
         {
             if (request == nullptr)
                 throw gcnew ArgumentNullException("request");
@@ -57,18 +53,12 @@ namespace Thrift
         {
             Object^ target = GCHandleFromVoidPtr(notifier->data).Target;
             ThriftClient^ client = (ThriftClient^)target;
+            RequestHandler^ request;
 
-            while (true)
-            {
-                TransportHandler^ request;
-
-                if (!client->_requests->TryDequeue(request))
-                {
-                    break;
-                }
-
-                TTransport^ transport = client->_factory->Create();
-                request(transport);
+            while (client->_requests->TryDequeue(request))
+            {               
+				TProtocol^ protocol = gcnew TBinaryProtocol(gcnew TMemoryBuffer());
+                request(protocol);
             }
         }
 

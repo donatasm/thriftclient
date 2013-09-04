@@ -3,31 +3,26 @@
 using namespace System;
 using namespace System::Collections::Concurrent;
 using namespace System::Runtime::InteropServices;
+using namespace Thrift::Protocol;
 using namespace Thrift::Transport;
 
 namespace Thrift
 {
     namespace Client
     {
-        public delegate void TransportHandler(TTransport^);
-
-
-        public interface class ITransportFactory
-        {
-            TTransport^ Create();
-        };
-
+        public delegate void RequestHandler(TProtocol^);
+		
 
         public ref class ThriftClient sealed
         {
         public:
-            ThriftClient(ITransportFactory^ factory);
-            void Send(TransportHandler^ request);
+            ThriftClient();
+            void Send(RequestHandler^ request);
             void Run();
             ~ThriftClient();
         internal:
-            ITransportFactory^ _factory;
-            ConcurrentQueue<TransportHandler^>^ _requests;
+            ConcurrentQueue<RequestHandler^>^ _requests;
+		private:
             uv_loop_t* _loop;
             uv_async_t* _notifier;
             void* _thisHandle;
