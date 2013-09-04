@@ -10,7 +10,7 @@ namespace Thrift.Client.Run
     {
         private static void Main()
         {
-            const int count = 1024 * 1024;
+            const int count = 8192;
 
             var client = new ThriftClient(new TransportFactory());
 
@@ -32,6 +32,8 @@ namespace Thrift.Client.Run
             Thread.Sleep(1000);
 
             var elapsedAscending = elapsed.OrderBy(x => x).ToArray();
+            Console.WriteLine("Count {0}", count);
+            Console.WriteLine("20% {0}", elapsedAscending[(int)(count * .2)]);
             Console.WriteLine("50% {0}", elapsedAscending[(int)(count * .5)]);
             Console.WriteLine("85% {0}", elapsedAscending[(int)(count * .85)]);
             Console.WriteLine("95% {0}", elapsedAscending[(int)(count * .95)]);
