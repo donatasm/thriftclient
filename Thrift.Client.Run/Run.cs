@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using Thrift.Protocol;
 
 namespace Thrift.Client.Run
 {
@@ -9,11 +10,11 @@ namespace Thrift.Client.Run
     {
         private static void Main()
         {
-            const int count = 16384;
+            const int count = 1;
 
             var client = new ThriftClient();
 
-            new Thread(client.Run) { IsBackground = true }.Start();
+            //new Thread(client.Run) { IsBackground = true }.Start();
 
             var elapsed = new long[count];
 
@@ -23,17 +24,30 @@ namespace Thrift.Client.Run
             {
                 var stopwatch = Stopwatch.StartNew();
                 var local = i;
-                client.Send(request =>
-                    {
-                        request.WriteString("Hello, world!");
-                        request.Transport.Flush();
-                        elapsed[local] = stopwatch.ElapsedMilliseconds;
-                    });
+                client.Send(
+                    requestTransport =>
+                        {
+                            var protocol = new TBinaryProtocol(requestTransport);
+                            protocol.WriteI64(1);
+                            protocol.WriteString("Hello, world!");
+                            requestTransport.Flush();
+
+                            elapsed[local] = stopwatch.ElapsedMilliseconds;
+                        },
+                    (responseTransport, exception) =>
+                        {
+                            if (exception != null)
+                            {
+                                Console.WriteLine(exception.Message);
+                            }
+                        });
             }
+
+            client.Run();
 
             var totalElapsed = totalStopwatch.Elapsed;
 
-            Thread.Sleep(1000);
+            Thread.Sleep(3000);
 
             var elapsedAscending = elapsed.OrderBy(x => x).ToArray();
             Console.WriteLine("Count {0}", count);

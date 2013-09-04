@@ -35,12 +35,19 @@ namespace Thrift.Server
 
         public bool Process(TProtocol iprot, TProtocol oprot)
         {
-            var received = iprot.ReadString();
+            var received = iprot.ReadI32();
             LogFormat("Received '{0}'", received);
 
-            oprot.WriteString(received);
+            for (var i = 0; i < 65536; i++)
+            {
+                oprot.WriteI32(i + 1);
+            }
 
-            return false;
+            oprot.Transport.Flush();
+
+            LogFormat("Request processed!");
+
+            return true;
         }
 
         private static void Log(string message)
