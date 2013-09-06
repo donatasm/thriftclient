@@ -115,9 +115,6 @@ namespace Thrift
         }
 
 
-        static char frame[8] = { 0, 0, 0, 4, 1, 2, 3, 4 }; // TODO: imaginary frame
-
-
         void NotifyCallback(uv_async_t* notifier, int status)
         {
             ContextQueue^ contextQueue = ContextQueue::FromPointer(notifier->data);
@@ -307,6 +304,7 @@ namespace Thrift
 
             return buffer;
         }
+
 
         void ResetFrame(TFrame* frame)
         {
