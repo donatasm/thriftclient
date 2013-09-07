@@ -144,7 +144,7 @@ namespace Thrift
             }
 
             int contentLength = 4; // frame content length
-            TFrame* frame = new TFrame();
+            Frame* frame = new Frame();
             ResetFrame(frame);
             // inject frame header
             frame->buffer[0] = (0xFF & (contentLength >> 24));
@@ -181,7 +181,7 @@ namespace Thrift
 
         void OpenCallback(uv_connect_t* connectRequest, int status)
         {
-            TFrame* frame = (TFrame*)connectRequest->data;
+            Frame* frame = (Frame*)connectRequest->data;
             delete connectRequest;
 
             if (status != 0)
@@ -194,7 +194,7 @@ namespace Thrift
         }
 
 
-        void SendFrame(TFrame* frame)
+        void SendFrame(Frame* frame)
         {
             uv_write_t* writeRequest = new uv_write_t();
             writeRequest->data = frame;
@@ -213,7 +213,7 @@ namespace Thrift
 
         void SendFrameCallback(uv_write_t* writeRequest, int status)
         {
-            TFrame* frame = (TFrame*)writeRequest->data;
+            Frame* frame = (Frame*)writeRequest->data;
             delete writeRequest;
 
             if (status != 0)
@@ -228,7 +228,7 @@ namespace Thrift
         }
 
 
-        void ReceiveFrame(TFrame* frame)
+        void ReceiveFrame(Frame* frame)
         {
             ResetFrame(frame);
 
@@ -243,12 +243,12 @@ namespace Thrift
 
         void ReceiveFrameCallback(uv_stream_t* socket, ssize_t nread, const uv_buf_t* buffer)
         {
-            TFrame* frame = (TFrame*)socket->data;
+            Frame* frame = (Frame*)socket->data;
 
             if (nread < 0)
             {
                 delete frame;
-                UvException::Throw(nread);
+                UvException::Throw((int)nread);
             }
 
             // read frame header
@@ -276,7 +276,7 @@ namespace Thrift
                 frame->header = header;
             }
 
-            frame->position += nread;
+            frame->position += (int)nread;
 
             if (frame->header == frame->position - FRAME_HEADER_SIZE)
             {
@@ -288,14 +288,14 @@ namespace Thrift
 
         void AllocateFrameBuffer(uv_handle_t* socket, size_t size, uv_buf_t* buffer)
         {
-            TFrame* frame = (TFrame*)socket->data;
+            Frame* frame = (Frame*)socket->data;
 
             buffer->base = frame->buffer;
             buffer->len = MAX_FRAME_SIZE;
         }
 
 
-        uv_buf_t InitFrameBuffer(TFrame* frame)
+        uv_buf_t InitFrameBuffer(Frame* frame)
         {
             uv_buf_t buffer;
 
@@ -306,7 +306,7 @@ namespace Thrift
         }
 
 
-        void ResetFrame(TFrame* frame)
+        void ResetFrame(Frame* frame)
         {
             frame->header = -1;
             frame->position = 0;

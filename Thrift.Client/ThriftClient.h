@@ -74,18 +74,18 @@ namespace Thrift
             int header;
             int position;
             char buffer[MAX_FRAME_SIZE];
-        } TFrame;
+        } Frame;
 
 
         void NotifyCallback(uv_async_t* notifier, int status);
         void Open(ThriftContext^ context, uv_loop_t* loop);
         void OpenCallback(uv_connect_t* connectRequest, int status);
-        void SendFrame(TFrame* frame);
+        void SendFrame(Frame* frame);
         void SendFrameCallback(uv_write_t* writeRequest, int status);
-        void ReceiveFrame(TFrame* frame);
+        void ReceiveFrame(Frame* frame);
         void ReceiveFrameCallback(uv_stream_t* socket, ssize_t nread, const uv_buf_t* buffer);
         void AllocateFrameBuffer(uv_handle_t* socket, size_t size, uv_buf_t* buffer);
-        uv_buf_t InitFrameBuffer(TFrame* frame);
-        void ResetFrame(TFrame* frame);
+        uv_buf_t InitFrameBuffer(Frame* frame);
+        void ResetFrame(Frame* frame);
     }
 }
