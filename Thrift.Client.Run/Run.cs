@@ -27,9 +27,8 @@ namespace Thrift.Client.Run
                 client.Send(
                     requestTransport =>
                         {
-                            var protocol = new TBinaryProtocol(requestTransport);
-                            protocol.WriteI64(1);
-                            protocol.WriteString("Hello, world!");
+                            var iprot = new TBinaryProtocol(requestTransport);
+                            iprot.WriteI32(19);
                             requestTransport.Flush();
 
                             elapsed[local] = stopwatch.ElapsedMilliseconds;
@@ -39,6 +38,13 @@ namespace Thrift.Client.Run
                             if (exception != null)
                             {
                                 Console.WriteLine(exception.Message);
+                                return;
+                            }
+
+                            var oprot = new TBinaryProtocol(responseTransport);
+                            for (var j = 0; j < 65536; j++)
+                            {
+                                Console.WriteLine(oprot.ReadI32());
                             }
                         });
             }

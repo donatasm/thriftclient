@@ -43,6 +43,11 @@ namespace Thrift.Server
                 oprot.WriteI32(i + 1);
             }
 
+            //for (var i = 0; i < 4; i++)
+            //{
+            //    oprot.WriteI32(i + 1);
+            //}
+
             oprot.Transport.Flush();
 
             LogFormat("Request processed!");

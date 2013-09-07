@@ -71,21 +71,47 @@ namespace Thrift
         typedef struct
         {
             uv_tcp_t socket;
-            int header;
-            int position;
             char buffer[MAX_FRAME_SIZE];
-        } Frame;
+        } SocketBuffer;
 
 
-        void NotifyCallback(uv_async_t* notifier, int status);
-        void Open(ThriftContext^ context, uv_loop_t* loop);
-        void OpenCallback(uv_connect_t* connectRequest, int status);
-        void SendFrame(Frame* frame);
-        void SendFrameCallback(uv_write_t* writeRequest, int status);
-        void ReceiveFrame(Frame* frame);
-        void ReceiveFrameCallback(uv_stream_t* socket, ssize_t nread, const uv_buf_t* buffer);
+        private ref class FrameTransport : TTransport
+        {
+        public:
+            FrameTransport(const char* address, int port, uv_loop_t* loop);
+            ~FrameTransport();
+            virtual void Open() override;
+            virtual void Close() override;
+            virtual property bool IsOpen { bool get() override; }
+            virtual int Read(array<byte>^ buf, int off, int len) override;
+            virtual void Write(array<byte>^ buf, int off, int len) override;
+            virtual void Flush() override;
+
+            void* ToPointer();
+            static FrameTransport^ FromPointer(void* ptr);
+            
+            void SendFrame();
+            void ReceiveFrame();
+
+            int _header;
+            int _position;
+            bool _isOpen;
+            SocketBuffer* _socketBuffer;
+
+            ThriftContext^ _context;
+
+        private:
+            const char* _address;
+            int _port;
+            uv_loop_t* _loop;
+            GCHandle _handle;
+        };
+
+
+        void NotifyCompleted(uv_async_t* notifier, int status);
+        void OpenCompleted(uv_connect_t* connectRequest, int status);
+        void SendFrameCompleted(uv_write_t* writeRequest, int status);
+        void ReceiveFrameCompleted(uv_stream_t* socket, ssize_t nread, const uv_buf_t* buffer);
         void AllocateFrameBuffer(uv_handle_t* socket, size_t size, uv_buf_t* buffer);
-        uv_buf_t InitFrameBuffer(Frame* frame);
-        void ResetFrame(Frame* frame);
     }
 }

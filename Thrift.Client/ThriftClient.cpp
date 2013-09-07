@@ -63,7 +63,7 @@ namespace Thrift
             _notifier = new uv_async_t();
             _notifier->data = _contextQueue->ToPointer();
 
-            uv_async_init(_loop, _notifier, NotifyCallback);
+            uv_async_init(_loop, _notifier, NotifyCompleted);
         }
 
 
@@ -115,7 +115,188 @@ namespace Thrift
         }
 
 
-        void NotifyCallback(uv_async_t* notifier, int status)
+        FrameTransport::FrameTransport(const char* address, int port, uv_loop_t* loop)
+        {
+            _handle = GCHandle::Alloc(this);
+
+            _address = address;
+            _port = port;
+            _loop = loop;
+            _position = FRAME_HEADER_SIZE; // reserve first bytes for frame header
+            _header = 0;
+            _isOpen = false;
+            _socketBuffer = new SocketBuffer();
+        }
+
+
+        FrameTransport::~FrameTransport()
+        {
+            Close();
+        }
+
+
+        void FrameTransport::Open()
+        {
+            struct sockaddr_in address;
+
+            int error;
+
+            error = uv_ip4_addr(_address, _port, &address);
+            if (error != 0)
+            {
+                UvException::Throw(error);
+            }
+
+            error = uv_tcp_init(_loop, &_socketBuffer->socket);
+            if (error != 0)
+            {
+                UvException::Throw(error);
+            }
+
+            uv_connect_t* connectRequest = new uv_connect_t();
+            connectRequest->data = this->ToPointer();
+
+            error = uv_tcp_connect(connectRequest, &_socketBuffer->socket, (const sockaddr*)&address, OpenCompleted);
+            if (error != 0)
+            {
+                delete connectRequest;
+                UvException::Throw(error);
+            }
+        }
+
+
+        void FrameTransport::Close()
+        {
+            if (_handle.IsAllocated)
+            {
+                _handle.Free();
+            }
+
+            if (_socketBuffer != NULL)
+            {
+                delete _socketBuffer;
+                _socketBuffer = NULL;
+            }
+
+            _isOpen = false;
+        }
+
+
+        bool FrameTransport::IsOpen::get()
+        {
+            return _isOpen;
+        }
+
+
+        int FrameTransport::Read(array<byte>^ buf, int off, int len)
+        {
+            int left = _header - _position + FRAME_HEADER_SIZE;
+            int read;
+
+            if (left < len)
+            {
+                read = left;
+            }
+            else
+            {
+                read = len;
+            }
+
+            if (read > 0)
+            {
+                IntPtr source = IntPtr::IntPtr(_socketBuffer->buffer) + _position;
+
+                Marshal::Copy(source, buf, off, read);
+
+                _position += read;
+
+                return read;
+            }
+
+            return 0;
+        }
+
+
+        void FrameTransport::Write(array<byte>^ buf, int off, int len)
+        {
+            if (_position + len > MAX_FRAME_SIZE)
+            {
+                throw gcnew TTransportException(String::Format("Maximum frame size {0} exceeded.", MAX_FRAME_SIZE));
+            }
+
+            IntPtr destination = IntPtr::IntPtr(_socketBuffer->buffer) + _position;
+
+            Marshal::Copy(buf, off, destination, len);
+            
+            _position += len;
+        }
+
+
+        void FrameTransport::Flush()
+        {
+            if (!_isOpen)
+            {
+                Open();
+            }
+            else
+            {
+                SendFrame();
+            }
+        }
+
+
+        void* FrameTransport::ToPointer()
+        {
+            return GCHandle::ToIntPtr(_handle).ToPointer();
+        }
+
+
+        FrameTransport^ FrameTransport::FromPointer(void* ptr)
+        {
+            GCHandle handle = GCHandle::FromIntPtr(IntPtr(ptr));
+            return (FrameTransport^)handle.Target;
+        }
+
+
+        void FrameTransport::SendFrame()
+        {
+            _header = _position - FRAME_HEADER_SIZE;
+
+            _socketBuffer->buffer[0] = (0xFF & (_header >> 24));
+            _socketBuffer->buffer[1] = (0xFF & (_header >> 16));
+            _socketBuffer->buffer[2] = (0xFF & (_header >> 8));
+            _socketBuffer->buffer[3] = (0xFF & (_header));
+
+            uv_write_t* writeRequest = new uv_write_t();
+            writeRequest->data = this->ToPointer();
+
+            uv_buf_t buffer;
+            buffer.base = _socketBuffer->buffer;
+            buffer.len = _position;
+
+            int error = uv_write(writeRequest, (uv_stream_t*)&_socketBuffer->socket, &buffer, 1, SendFrameCompleted);
+            if (error != 0)
+            {
+                delete writeRequest;
+                UvException::Throw(error);
+            }
+        }
+
+        
+        void FrameTransport::ReceiveFrame()
+        {
+            _position = 0;
+            _header = 0;
+
+            int error = uv_read_start((uv_stream_t*)&_socketBuffer->socket, AllocateFrameBuffer, ReceiveFrameCompleted);
+            if (error != 0)
+            {
+                UvException::Throw(error);
+            }
+        }
+
+
+        void NotifyCompleted(uv_async_t* notifier, int status)
         {
             ContextQueue^ contextQueue = ContextQueue::FromPointer(notifier->data);
 
@@ -123,136 +304,64 @@ namespace Thrift
 
             while (contextQueue->TryDequeue(context))
             {
+                const char* address = context->Address;
+                int port = context->Port;
+
+                FrameTransport^ transport = gcnew FrameTransport(address, port, notifier->loop);
+
+                transport->_context = context;
+
                 // execute request callback
-                context->RequestTransportCallback(gcnew TMemoryBuffer());
-
-                Open(context, notifier->loop);
+                context->RequestTransportCallback(transport);
             }
         }
 
 
-        void Open(ThriftContext^ context, uv_loop_t* loop)
+        void OpenCompleted(uv_connect_t* connectRequest, int status)
         {
-            struct sockaddr_in address;
-
-            int error;
-
-            error = uv_ip4_addr(context->Address, context->Port, &address);
-            if (error != 0)
-            {
-                UvException::Throw(error);
-            }
-
-            int contentLength = 4; // frame content length
-            Frame* frame = new Frame();
-            ResetFrame(frame);
-            // inject frame header
-            frame->buffer[0] = (0xFF & (contentLength >> 24));
-            frame->buffer[1] = (0xFF & (contentLength >> 16));
-            frame->buffer[2] = (0xFF & (contentLength >> 8));
-            frame->buffer[3] = (0xFF & (contentLength));
-            // set frame body
-            frame->buffer[4] = 1;
-            frame->buffer[5] = 2;
-            frame->buffer[6] = 3;
-            frame->buffer[7] = 4;
-            // set position
-            frame->position = 8;
-
-            error = uv_tcp_init(loop, &frame->socket);
-            if (error != 0)
-            {
-                delete frame;
-                UvException::Throw(error);
-            }
-
-            uv_connect_t* connectRequest = new uv_connect_t();
-            connectRequest->data = frame;
-
-            error = uv_tcp_connect(connectRequest, &frame->socket, (const sockaddr*)&address, OpenCallback);
-            if (error != 0)
-            {
-                delete connectRequest;
-                delete frame;
-                UvException::Throw(error);
-            }
-        }
-
-
-        void OpenCallback(uv_connect_t* connectRequest, int status)
-        {
-            Frame* frame = (Frame*)connectRequest->data;
+            FrameTransport^ transport = FrameTransport::FromPointer(connectRequest->data);
             delete connectRequest;
 
             if (status != 0)
             {
-                delete frame;
+                transport->Close();
                 UvException::Throw(status);
             }
 
-            SendFrame(frame);
+            transport->_isOpen = true;
+            transport->SendFrame();
         }
 
 
-        void SendFrame(Frame* frame)
+        void SendFrameCompleted(uv_write_t* writeRequest, int status)
         {
-            uv_write_t* writeRequest = new uv_write_t();
-            writeRequest->data = frame;
-
-            uv_buf_t buffer = InitFrameBuffer(frame);
-
-            int error = uv_write(writeRequest, (uv_stream_t*)&frame->socket, &buffer, 1, SendFrameCallback);
-            if (error != 0)
-            {
-                delete writeRequest;
-                delete frame;
-                UvException::Throw(error);
-            }
-        }
-
-
-        void SendFrameCallback(uv_write_t* writeRequest, int status)
-        {
-            Frame* frame = (Frame*)writeRequest->data;
+            FrameTransport^ transport = FrameTransport::FromPointer(writeRequest->data);
             delete writeRequest;
 
             if (status != 0)
             {
-                delete frame;
+                transport->Close();
                 UvException::Throw(status);
             }
 
-            frame->socket.data = frame;
+            transport->_socketBuffer->socket.data = transport->ToPointer();
 
-            ReceiveFrame(frame);
+            transport->ReceiveFrame();
         }
 
 
-        void ReceiveFrame(Frame* frame)
+        void ReceiveFrameCompleted(uv_stream_t* socket, ssize_t nread, const uv_buf_t* buffer)
         {
-            ResetFrame(frame);
-
-            int error = uv_read_start((uv_stream_t*)&frame->socket, AllocateFrameBuffer, ReceiveFrameCallback);
-            if (error != 0)
-            {
-                delete frame;
-                UvException::Throw(error);
-            }
-        }
-
-
-        void ReceiveFrameCallback(uv_stream_t* socket, ssize_t nread, const uv_buf_t* buffer)
-        {
-            Frame* frame = (Frame*)socket->data;
+            FrameTransport^ transport = FrameTransport::FromPointer(socket->data);
 
             if (nread < 0)
             {
-                delete frame;
+                transport->Close();
                 UvException::Throw((int)nread);
             }
 
             // read frame header
-            if (frame->position < FRAME_HEADER_SIZE)
+            if (transport->_position < FRAME_HEADER_SIZE)
             {
                 int header = 0;
 
@@ -273,43 +382,27 @@ namespace Thrift
                     header |= (buffer->base[3] & 0xFF);
                 }
 
-                frame->header = header;
+                transport->_header = header;
+
+                // TODO: check header content if it fits in frame
             }
 
-            frame->position += (int)nread;
+            transport->_position += (int)nread;
 
-            if (frame->header == frame->position - FRAME_HEADER_SIZE)
+            if (transport->_header == transport->_position - FRAME_HEADER_SIZE)
             {
-                // TODO: handle frame completed
-                Console::WriteLine("Header: {0} Position {1}", frame->header, frame->position);
+                transport->_position = FRAME_HEADER_SIZE;
+                transport->_context->ResponseTransportCallback(transport, nullptr);
             }
         }
 
 
         void AllocateFrameBuffer(uv_handle_t* socket, size_t size, uv_buf_t* buffer)
         {
-            Frame* frame = (Frame*)socket->data;
+            FrameTransport^ transport = FrameTransport::FromPointer(socket->data);
 
-            buffer->base = frame->buffer;
+            buffer->base = transport->_socketBuffer->buffer;
             buffer->len = MAX_FRAME_SIZE;
-        }
-
-
-        uv_buf_t InitFrameBuffer(Frame* frame)
-        {
-            uv_buf_t buffer;
-
-            buffer.base = frame->buffer;
-            buffer.len = frame->position;
-
-            return buffer;
-        }
-
-
-        void ResetFrame(Frame* frame)
-        {
-            frame->header = -1;
-            frame->position = 0;
         }
     }
 }
