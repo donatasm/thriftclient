@@ -38,7 +38,7 @@ namespace Thrift.Server
             var received = iprot.ReadI32();
             LogFormat("Received '{0}'", received);
 
-            for (var i = 0; i < 65536; i++)
+            for (var i = 0; i < 10000; i++)
             {
                 oprot.WriteI32(i + 1);
             }

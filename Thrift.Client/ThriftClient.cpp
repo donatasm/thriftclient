@@ -360,6 +360,12 @@ namespace Thrift
                 UvException::Throw((int)nread);
             }
 
+            if (transport->_position + nread > MAX_FRAME_SIZE)
+            {
+                transport->Close();
+                throw gcnew TTransportException(String::Format("Maximum frame size {0} exceeded.", MAX_FRAME_SIZE));
+            }
+
             // read frame header
             if (transport->_position < FRAME_HEADER_SIZE)
             {
@@ -383,8 +389,6 @@ namespace Thrift
                 }
 
                 transport->_header = header;
-
-                // TODO: check header content if it fits in frame
             }
 
             transport->_position += (int)nread;

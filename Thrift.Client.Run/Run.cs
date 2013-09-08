@@ -42,7 +42,7 @@ namespace Thrift.Client.Run
                             }
 
                             var oprot = new TBinaryProtocol(responseTransport);
-                            for (var j = 0; j < 65536; j++)
+                            for (var j = 0; j < 10000; j++)
                             {
                                 Console.WriteLine(oprot.ReadI32());
                             }
