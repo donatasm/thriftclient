@@ -4,12 +4,13 @@ namespace Thrift
 {
     namespace Client
     {
-        ThriftContext::ThriftContext(InputProtocol^ input, OutputProtocol^ output)
+        ThriftContext::ThriftContext(InputProtocol^ input, OutputProtocol^ output, ThriftClient^ client)
         {
             InputProtocolCallback = input;
             OutputProtocolCallback = output;
             Address = "127.0.0.1";
             Port = 1337;
+            Client = client;
         }
 
 
@@ -57,6 +58,7 @@ namespace Thrift
         ThriftClient::ThriftClient()
         {
             _contextQueue = gcnew ContextQueue();
+            TransportPool = gcnew Queue<FrameTransport^>();
 
             _loop = uv_loop_new();
 
@@ -83,7 +85,7 @@ namespace Thrift
             if (output == nullptr)
                 throw gcnew ArgumentNullException("output");
 
-            ThriftContext^ context = gcnew ThriftContext(input, output);
+            ThriftContext^ context = gcnew ThriftContext(input, output, this);
 
             _contextQueue->Enqueue(context);
 
@@ -173,6 +175,8 @@ namespace Thrift
             {
                 _handle.Free();
             }
+
+            // TODO: close socket too
 
             if (_socketBuffer != NULL)
             {
@@ -309,7 +313,17 @@ namespace Thrift
                 const char* address = context->Address;
                 int port = context->Port;
 
-                FrameTransport^ transport = gcnew FrameTransport(address, port, notifier->loop);
+                FrameTransport^ transport;
+                Queue<FrameTransport^>^ transportPool = context->Client->TransportPool;
+
+                if (transportPool->Count > 0)
+                {
+                    transport = transportPool->Dequeue();
+                }
+                else
+                {
+                    transport = gcnew FrameTransport(address, port, notifier->loop);
+                }
 
                 transport->_context = context;
 
@@ -395,10 +409,28 @@ namespace Thrift
 
             transport->_position += (int)nread;
 
+            // check if frame already received
             if (transport->_header == transport->_position - FRAME_HEADER_SIZE)
             {
+                // stop reading
+                int error = uv_read_stop((uv_stream_t*)&transport->_socketBuffer->socket);
+                if (error != 0)
+                {
+                    UvException::Throw(error);
+                }
+
                 transport->_position = FRAME_HEADER_SIZE;
                 transport->_context->OutputProtocolCallback(transport->Protocol, nullptr);
+
+                // prepare for the next frame to be written
+                transport->_position = FRAME_HEADER_SIZE;
+                transport->_header = 0;
+
+                // if transport is still opened, return it to the pool
+                if (transport->IsOpen)
+                {
+                    transport->_context->Client->TransportPool->Enqueue(transport);
+                }
             }
         }
 

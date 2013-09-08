@@ -1,5 +1,6 @@
 #pragma once
 #include "uv.h"
+#using <system.dll>
 
 #define FRAME_HEADER_SIZE 4 // frame header size
 #define MAX_FRAME_SIZE 65536 // maximum size of a frame including headers
@@ -7,6 +8,7 @@
 using namespace System;
 using namespace System::IO;
 using namespace System::Collections::Concurrent;
+using namespace System::Collections::Generic;
 using namespace System::Runtime::InteropServices;
 using namespace Thrift::Protocol;
 using namespace Thrift::Transport;
@@ -19,14 +21,18 @@ namespace Thrift
         public delegate void OutputProtocol(TProtocol^, Exception^);
 
 
+        ref class ThriftClient;
+
+
         private ref struct ThriftContext sealed
         {
         public:
-            ThriftContext(InputProtocol^ input, OutputProtocol^ output);
+            ThriftContext(InputProtocol^ input, OutputProtocol^ output, ThriftClient^ client);
             initonly InputProtocol^ InputProtocolCallback;
             initonly OutputProtocol^ OutputProtocolCallback;
             const char* Address;
             int Port;
+            initonly ThriftClient^ Client;
         };
 
 
@@ -45,6 +51,9 @@ namespace Thrift
         };
 
 
+        ref class FrameTransport;
+
+
         public ref class ThriftClient sealed
         {
         public:
@@ -52,6 +61,7 @@ namespace Thrift
             ~ThriftClient();
             void Send(InputProtocol^ input, OutputProtocol^ output);
             void Run();
+            initonly Queue<FrameTransport^>^ TransportPool;
         private:
             uv_loop_t* _loop;
             uv_async_t* _notifier;
