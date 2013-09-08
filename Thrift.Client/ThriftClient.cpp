@@ -416,6 +416,7 @@ namespace Thrift
                 int error = uv_read_stop((uv_stream_t*)&transport->_socketBuffer->socket);
                 if (error != 0)
                 {
+                    transport->Close();
                     UvException::Throw(error);
                 }
 
