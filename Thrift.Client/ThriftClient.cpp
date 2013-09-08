@@ -4,10 +4,10 @@ namespace Thrift
 {
     namespace Client
     {
-        ThriftContext::ThriftContext(RequestTransport^ requestTransport, ResponseTransport^ responseTransport)
+        ThriftContext::ThriftContext(InputProtocol^ input, OutputProtocol^ output)
         {
-            RequestTransportCallback = requestTransport;
-            ResponseTransportCallback = responseTransport;
+            InputProtocolCallback = input;
+            OutputProtocolCallback = output;
             Address = "127.0.0.1";
             Port = 1337;
         }
@@ -75,15 +75,15 @@ namespace Thrift
         }
 
 
-        void ThriftClient::Send(RequestTransport^ requestTransport, ResponseTransport^ responseTransport)
+        void ThriftClient::Send(InputProtocol^ input, OutputProtocol^ output)
         {
-            if (requestTransport == nullptr)
-                throw gcnew ArgumentNullException("requestTransport");
+            if (input == nullptr)
+                throw gcnew ArgumentNullException("input");
 
-            if (responseTransport == nullptr)
-                throw gcnew ArgumentNullException("responseTransport");
+            if (output == nullptr)
+                throw gcnew ArgumentNullException("output");
 
-            ThriftContext^ context = gcnew ThriftContext(requestTransport, responseTransport);
+            ThriftContext^ context = gcnew ThriftContext(input, output);
 
             _contextQueue->Enqueue(context);
 
@@ -126,6 +126,8 @@ namespace Thrift
             _header = 0;
             _isOpen = false;
             _socketBuffer = new SocketBuffer();
+
+            Protocol = gcnew TBinaryProtocol(this);
         }
 
 
@@ -312,7 +314,7 @@ namespace Thrift
                 transport->_context = context;
 
                 // execute request callback
-                context->RequestTransportCallback(transport);
+                context->InputProtocolCallback(transport->Protocol);
             }
         }
 
@@ -396,7 +398,7 @@ namespace Thrift
             if (transport->_header == transport->_position - FRAME_HEADER_SIZE)
             {
                 transport->_position = FRAME_HEADER_SIZE;
-                transport->_context->ResponseTransportCallback(transport, nullptr);
+                transport->_context->OutputProtocolCallback(transport->Protocol, nullptr);
             }
         }
 

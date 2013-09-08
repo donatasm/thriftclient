@@ -15,16 +15,16 @@ namespace Thrift
 {
     namespace Client
     {
-        public delegate void RequestTransport(TTransport^);
-        public delegate void ResponseTransport(TTransport^, Exception^);
+        public delegate void InputProtocol(TProtocol^);
+        public delegate void OutputProtocol(TProtocol^, Exception^);
 
 
         private ref struct ThriftContext sealed
         {
         public:
-            ThriftContext(RequestTransport^ requestTransport, ResponseTransport^ responseTransport);
-            initonly RequestTransport^ RequestTransportCallback;
-            initonly ResponseTransport^ ResponseTransportCallback;
+            ThriftContext(InputProtocol^ input, OutputProtocol^ output);
+            initonly InputProtocol^ InputProtocolCallback;
+            initonly OutputProtocol^ OutputProtocolCallback;
             const char* Address;
             int Port;
         };
@@ -50,7 +50,7 @@ namespace Thrift
         public:
             ThriftClient();
             ~ThriftClient();
-            void Send(RequestTransport^ requestTransport, ResponseTransport^ responseTransport);
+            void Send(InputProtocol^ input, OutputProtocol^ output);
             void Run();
         private:
             uv_loop_t* _loop;
@@ -99,6 +99,7 @@ namespace Thrift
             SocketBuffer* _socketBuffer;
 
             ThriftContext^ _context;
+            initonly TBinaryProtocol^ Protocol;
 
         private:
             const char* _address;

@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using Thrift.Protocol;
 
 namespace Thrift.Client.Run
 {
@@ -25,15 +24,14 @@ namespace Thrift.Client.Run
                 var stopwatch = Stopwatch.StartNew();
                 var local = i;
                 client.Send(
-                    requestTransport =>
+                    input =>
                         {
-                            var iprot = new TBinaryProtocol(requestTransport);
-                            iprot.WriteI32(19);
-                            requestTransport.Flush();
+                            input.WriteI32(19);
+                            input.Transport.Flush();
 
                             elapsed[local] = stopwatch.ElapsedMilliseconds;
                         },
-                    (responseTransport, exception) =>
+                    (output, exception) =>
                         {
                             if (exception != null)
                             {
@@ -41,10 +39,9 @@ namespace Thrift.Client.Run
                                 return;
                             }
 
-                            var oprot = new TBinaryProtocol(responseTransport);
                             for (var j = 0; j < 10000; j++)
                             {
-                                Console.WriteLine(oprot.ReadI32());
+                                Console.WriteLine(output.ReadI32());
                             }
                         });
             }
