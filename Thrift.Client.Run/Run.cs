@@ -15,36 +15,7 @@ namespace Thrift.Client.Run
 
             const int requestCount = 1000;
 
-            var elapsed = Enumerable.Repeat(Int64.MaxValue, requestCount).ToArray();
-            var stopwatch = new Stopwatch();
-
-            Action<TProtocol> request = null;
-            request = (input) =>
-                {
-                    stopwatch.Restart();
-                    input.WriteString("Hello, world!");
-                    input.Transport.Flush();
-                };
-
-            Action<TProtocol, Exception, int> response = null;
-            response = (output, exception, n) =>
-                {
-                    if (exception != null)
-                    {
-                        throw exception;
-                    }
-
-                    output.ReadString();
-
-                    if (n < requestCount)
-                    {
-                        client.Send(i => request(i), (o, e) => response(o, e, n + 1));
-                    }
-
-                    elapsed[n - 1] = stopwatch.ElapsedMilliseconds;
-                };
-
-            client.Send((i) => request(i), (o, e) => response(o, e, 1));
+            var elapsed = Send(client, 1000);
 
             Thread.Sleep(3000);
 
@@ -57,6 +28,42 @@ namespace Thrift.Client.Run
             Console.WriteLine("99% {0}", elapsedAscending[(int)(requestCount * .99)]);
 
             client.Dispose();
+        }
+
+        private static long[] Send(ThriftClient client, int requestCount)
+        {
+            var elapsed = Enumerable.Repeat(Int64.MaxValue, requestCount).ToArray();
+            var stopwatch = new Stopwatch();
+
+            Action<TProtocol> request = null;
+            request = (input) =>
+            {
+                stopwatch.Restart();
+                input.WriteString("Hello, world!");
+                input.Transport.Flush();
+            };
+
+            Action<TProtocol, Exception, int> response = null;
+            response = (output, exception, n) =>
+            {
+                if (exception != null)
+                {
+                    throw exception;
+                }
+
+                output.ReadString();
+
+                if (n < requestCount)
+                {
+                    client.Send(i => request(i), (o, e) => response(o, e, n + 1));
+                }
+
+                elapsed[n - 1] = stopwatch.ElapsedMilliseconds;
+            };
+
+            client.Send((i) => request(i), (o, e) => response(o, e, 1));
+
+            return elapsed;
         }
     }
 }
