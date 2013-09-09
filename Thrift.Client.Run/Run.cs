@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using Thrift.Protocol;
@@ -10,15 +11,17 @@ namespace Thrift.Client.Run
         private static void Main()
         {
             var client = new ThriftClient();
-            //new Thread(client.Run) { IsBackground = true }.Start();
+            new Thread(client.Run) { IsBackground = true }.Start();
 
-            const int requestCount = 16;
+            const int requestCount = 1000;
 
             var elapsed = Enumerable.Repeat(Int64.MaxValue, requestCount).ToArray();
+            var stopwatch = new Stopwatch();
 
             Action<TProtocol> request = null;
             request = (input) =>
                 {
+                    stopwatch.Restart();
                     input.WriteString("Hello, world!");
                     input.Transport.Flush();
                 };
@@ -37,11 +40,13 @@ namespace Thrift.Client.Run
                     {
                         client.Send(i => request(i), (o, e) => response(o, e, n + 1));
                     }
+
+                    elapsed[n - 1] = stopwatch.ElapsedMilliseconds;
                 };
+
 
             client.Send((i) => request(i), (o, e) => response(o, e, 1));
 
-            client.Run();
 
             Thread.Sleep(3000);
 
