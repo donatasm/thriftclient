@@ -24,7 +24,7 @@ namespace Thrift.Server
                 new TFramedTransport.Factory(),
                 new TBinaryProtocol.Factory(),
                 new TBinaryProtocol.Factory(),
-                16, 128,
+                256, 8192,
                 Log);
         }
 

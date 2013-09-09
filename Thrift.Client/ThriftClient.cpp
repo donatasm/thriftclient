@@ -288,7 +288,7 @@ namespace Thrift
             }
         }
 
-        
+
         void FrameTransport::ReceiveFrame()
         {
             _position = 0;
