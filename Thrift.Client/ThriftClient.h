@@ -4,6 +4,7 @@
 
 #define FRAME_HEADER_SIZE 4 // frame header size
 #define MAX_FRAME_SIZE 65536 // maximum size of a frame including headers
+#define SEND_RECEIVE_FRAME_TIMEOUT 20 // send receive frame timeout in milliseconds
 
 using namespace System;
 using namespace System::IO;
@@ -82,6 +83,7 @@ namespace Thrift
         typedef struct
         {
             uv_tcp_t socket;
+            uv_timer_t timer;
             char buffer[MAX_FRAME_SIZE];
         } SocketBuffer;
 
@@ -124,6 +126,7 @@ namespace Thrift
         void OpenCompleted(uv_connect_t* connectRequest, int status);
         void SendFrameCompleted(uv_write_t* writeRequest, int status);
         void ReceiveFrameCompleted(uv_stream_t* socket, ssize_t nread, const uv_buf_t* buffer);
+        void TimeoutCompleted(uv_timer_t* timer, int status);
         void AllocateFrameBuffer(uv_handle_t* socket, size_t size, uv_buf_t* buffer);
     }
 }

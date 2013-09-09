@@ -14,14 +14,16 @@ namespace Thrift.Client.Run
         private const long Undefined = Int64.MaxValue;
         private static readonly ManualResetEventSlim AllDone = new ManualResetEventSlim();
 
-        private static long _counter;
+        private static long _requestCounter;
+        private static long _timeoutCounter;
 
         private static void Main()
         {
             var client = new ThriftClient();
             new Thread(client.Run) { IsBackground = true }.Start();
 
-            _counter = 0;
+            _requestCounter = 0;
+            _timeoutCounter = 0;
             var elapsed = new long[ConnectionCount][];
 
             for (var i = 0; i < ConnectionCount; i++)
@@ -37,10 +39,12 @@ namespace Thrift.Client.Run
             AllDone.Dispose();
 
             var aggregateElapsed = elapsed.SelectMany(e => e).OrderBy(x => x).ToArray();
-            Console.WriteLine("Total requests: {0}", _counter);
+            Console.WriteLine("Total requests: {0}", _requestCounter);
+            Console.WriteLine("Total timeouts: {0}", _timeoutCounter);
             Console.WriteLine("20% {0}", aggregateElapsed[(int)(TotalRequests * .2)]);
             Console.WriteLine("50% {0}", aggregateElapsed[(int)(TotalRequests * .5)]);
             Console.WriteLine("85% {0}", aggregateElapsed[(int)(TotalRequests * .85)]);
+            Console.WriteLine("90% {0}", aggregateElapsed[(int)(TotalRequests * .90)]);
             Console.WriteLine("95% {0}", aggregateElapsed[(int)(TotalRequests * .95)]);
             Console.WriteLine("99% {0}", aggregateElapsed[(int)(TotalRequests * .99)]);
         }
@@ -59,26 +63,37 @@ namespace Thrift.Client.Run
             Action<TProtocol, Exception, State> response = null;
             response = (output, exception, state) =>
             {
-                elapsed[state.N - 1] = state.Stopwatch.ElapsedMilliseconds;
-
-                _counter++;
+                if (elapsed[state.N - 1] == Undefined)
+                {
+                    elapsed[state.N - 1] = state.Stopwatch.ElapsedMilliseconds;
+                }
 
                 if (exception != null)
                 {
-                    throw exception;
+                    if (exception is TimeoutException)
+                    {
+                        _timeoutCounter++;
+                    }
+                    else
+                    {
+                        throw exception;                               
+                    }
                 }
-
-                output.ReadString();
-
-                if (state.N < requestCount)
+                else
                 {
-                    state.Stopwatch.Restart();
-                    client.Send(i => request(i), (o, e) => response(o, e, new State(state.N + 1, state.Stopwatch)));
-                }
+                    _requestCounter++;
 
-                if (_counter == TotalRequests)
-                {
-                    AllDone.Set();
+                    output.ReadString();
+                    if (state.N < requestCount)
+                    {
+                        state.Stopwatch.Restart();
+                        client.Send(i => request(i), (o, e) => response(o, e, new State(state.N + 1, state.Stopwatch)));
+                    }
+
+                    if (_requestCounter == TotalRequests)
+                    {
+                        AllDone.Set();
+                    }    
                 }
             };
 

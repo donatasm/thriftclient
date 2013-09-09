@@ -141,9 +141,19 @@ namespace Thrift
 
         void FrameTransport::Open()
         {
-            struct sockaddr_in address;
-
             int error;
+
+            void* thisPointer = this->ToPointer();
+
+            error = uv_timer_init(_loop, &_socketBuffer->timer);
+            if (error != 0)
+            {
+                UvException::Throw(error);
+            }
+
+            _socketBuffer->timer.data = thisPointer;
+
+            struct sockaddr_in address;
 
             error = uv_ip4_addr(_address, _port, &address);
             if (error != 0)
@@ -158,7 +168,7 @@ namespace Thrift
             }
 
             uv_connect_t* connectRequest = new uv_connect_t();
-            connectRequest->data = this->ToPointer();
+            connectRequest->data = thisPointer;
 
             error = uv_tcp_connect(connectRequest, &_socketBuffer->socket, (const sockaddr*)&address, OpenCompleted);
             if (error != 0)
@@ -280,7 +290,18 @@ namespace Thrift
             buffer.base = _socketBuffer->buffer;
             buffer.len = _position;
 
-            int error = uv_write(writeRequest, (uv_stream_t*)&_socketBuffer->socket, &buffer, 1, SendFrameCompleted);
+            int error;
+
+            // write frame
+            error = uv_write(writeRequest, (uv_stream_t*)&_socketBuffer->socket, &buffer, 1, SendFrameCompleted);
+            if (error != 0)
+            {
+                delete writeRequest;
+                UvException::Throw(error);
+            }
+
+            // start socket timeout timer
+            error = uv_timer_start(&_socketBuffer->timer, TimeoutCompleted, SEND_RECEIVE_FRAME_TIMEOUT, 0);
             if (error != 0)
             {
                 delete writeRequest;
@@ -412,8 +433,18 @@ namespace Thrift
             // check if frame already received
             if (transport->_header == transport->_position - FRAME_HEADER_SIZE)
             {
+                int error;
+
+                // stop socket timeout timer
+                error = uv_timer_stop(&transport->_socketBuffer->timer);
+                if (error != 0)
+                {
+                    transport->Close();
+                    UvException::Throw(error);
+                }
+
                 // stop reading
-                int error = uv_read_stop((uv_stream_t*)&transport->_socketBuffer->socket);
+                error = uv_read_stop((uv_stream_t*)&transport->_socketBuffer->socket);
                 if (error != 0)
                 {
                     transport->Close();
@@ -433,6 +464,20 @@ namespace Thrift
                     transport->_context->Client->TransportPool->Enqueue(transport);
                 }
             }
+        }
+
+
+        void TimeoutCompleted(uv_timer_t* timer, int status)
+        {
+            FrameTransport^ transport = FrameTransport::FromPointer(timer->data);
+
+            if (status != 0)
+            {
+                transport->Close();
+                UvException::Throw(status);
+            }
+
+            transport->_context->OutputProtocolCallback(nullptr, gcnew TimeoutException());
         }
 
 
