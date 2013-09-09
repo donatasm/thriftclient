@@ -38,11 +38,11 @@ namespace Thrift.Client.Run
 
             var aggregateElapsed = elapsed.SelectMany(e => e).OrderBy(x => x).ToArray();
             Console.WriteLine("Total requests: {0}", _counter);
-            Console.WriteLine("20% {0}", aggregateElapsed[(int)(RequestCount * .2)]);
-            Console.WriteLine("50% {0}", aggregateElapsed[(int)(RequestCount * .5)]);
-            Console.WriteLine("85% {0}", aggregateElapsed[(int)(RequestCount * .85)]);
-            Console.WriteLine("95% {0}", aggregateElapsed[(int)(RequestCount * .95)]);
-            Console.WriteLine("99% {0}", aggregateElapsed[(int)(RequestCount * .99)]);
+            Console.WriteLine("20% {0}", aggregateElapsed[(int)(TotalRequests * .2)]);
+            Console.WriteLine("50% {0}", aggregateElapsed[(int)(TotalRequests * .5)]);
+            Console.WriteLine("85% {0}", aggregateElapsed[(int)(TotalRequests * .85)]);
+            Console.WriteLine("95% {0}", aggregateElapsed[(int)(TotalRequests * .95)]);
+            Console.WriteLine("99% {0}", aggregateElapsed[(int)(TotalRequests * .99)]);
         }
 
         private static long[] Send(ThriftClient client, int requestCount)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Thrift.Protocol;
 using Thrift.Transport;
 
@@ -14,10 +15,15 @@ namespace Thrift.Server
 
     internal sealed class EchoServer : TProcessor
     {
+        private const int TimeoutProbability = 15;
+        private readonly object _syncRoot = new object();
+        private readonly Random _random;
         private readonly TThreadPoolServer _server;
 
         public EchoServer()
         {
+            _random = new Random();
+
             _server = new TThreadPoolServer(this,
                 new TServerSocket(1337),
                 new TFramedTransport.Factory(),
@@ -36,8 +42,28 @@ namespace Thrift.Server
         public bool Process(TProtocol iprot, TProtocol oprot)
         {
             var received = iprot.ReadString();
-            oprot.WriteString(received);
+
+            int random;
+
+            lock (_syncRoot)
+            {
+                random = _random.Next(100) + 1;
+            }
+
+            var shouldTimeout = random <= TimeoutProbability;
+
+            if (shouldTimeout)
+            {
+                Thread.Sleep(100);
+                oprot.WriteString("Timeout");
+            }
+            else
+            {
+                oprot.WriteString(received);
+            }
+
             oprot.Transport.Flush();
+
             return true;
         }
 
