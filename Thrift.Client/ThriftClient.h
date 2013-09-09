@@ -61,6 +61,7 @@ namespace Thrift
             ~ThriftClient();
             void Send(InputProtocol^ input, OutputProtocol^ output);
             void Run();
+        internal:
             initonly Queue<FrameTransport^>^ TransportPool;
         private:
             uv_loop_t* _loop;

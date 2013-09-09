@@ -44,9 +44,7 @@ namespace Thrift.Client.Run
                     elapsed[n - 1] = stopwatch.ElapsedMilliseconds;
                 };
 
-
             client.Send((i) => request(i), (o, e) => response(o, e, 1));
-
 
             Thread.Sleep(3000);
 
