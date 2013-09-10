@@ -1,9 +1,10 @@
-#pragma once
 #include "uv.h"
 #using <system.dll>
 
-#define FRAME_HEADER_SIZE 4 // frame header size
-#define MAX_FRAME_SIZE 65536 // maximum size of a frame including headers
+
+#define FRAME_HEADER_SIZE 4 // Frame header size
+#define MAX_FRAME_SIZE 65536 // Maximum size of a frame including headers
+
 
 using namespace System;
 using namespace System::IO;
@@ -13,47 +14,18 @@ using namespace System::Runtime::InteropServices;
 using namespace Thrift::Protocol;
 using namespace Thrift::Transport;
 
+
 namespace Thrift
 {
     namespace Client
     {
-        public delegate void InputProtocol(TProtocol^);
-        public delegate void OutputProtocol(TProtocol^, Exception^);
+        // Thrift serialization handlers
+        public delegate void InputProtocol(TProtocol^ inputProtocol);
+        public delegate void OutputProtocol(TProtocol^ outputProtocol, Exception^ exception);
 
 
-        ref class ThriftClient;
-
-
-        private ref struct ThriftContext sealed
-        {
-        public:
-            ThriftContext(InputProtocol^ input, OutputProtocol^ output, ThriftClient^ client);
-            initonly InputProtocol^ InputProtocolCallback;
-            initonly OutputProtocol^ OutputProtocolCallback;
-            const char* Address;
-            int Port;
-            initonly ThriftClient^ Client;
-        };
-
-
-        private ref class ContextQueue sealed
-        {
-        public:
-            ContextQueue();
-            ~ContextQueue();
-            void Enqueue(ThriftContext^ context);
-            bool TryDequeue(ThriftContext^ %context);
-            void* ToPointer();
-            static ContextQueue^ FromPointer(void* ptr);
-        private:
-            GCHandle _handle;
-            initonly ConcurrentQueue<ThriftContext^>^ _queue;
-        };
-
-
+        ref class ContextQueue;
         ref class FrameTransport;
-
-
         public ref class ThriftClient sealed
         {
         public:
@@ -79,11 +51,39 @@ namespace Thrift
         };
 
 
+        // Socket descriptor with it's buffer
         typedef struct
         {
             uv_tcp_t socket;
             char buffer[MAX_FRAME_SIZE];
         } SocketBuffer;
+
+
+        private ref struct ThriftContext sealed
+        {
+        public:
+            ThriftContext(InputProtocol^ input, OutputProtocol^ output, ThriftClient^ client);
+            const char* Address;
+            int Port;
+            initonly ThriftClient^ Client;
+            initonly InputProtocol^ InputProtocolCallback;
+            initonly OutputProtocol^ OutputProtocolCallback;
+        };
+
+
+        private ref class ContextQueue sealed
+        {
+        public:
+            ContextQueue();
+            ~ContextQueue();
+            void Enqueue(ThriftContext^ context);
+            bool TryDequeue(ThriftContext^ %context);
+            void* ToPointer();
+            static ContextQueue^ FromPointer(void* ptr);
+        private:
+            GCHandle _handle;
+            initonly ConcurrentQueue<ThriftContext^>^ _queue;
+        };
 
 
         private ref class FrameTransport : TTransport
@@ -97,20 +97,17 @@ namespace Thrift
             virtual int Read(array<byte>^ buf, int off, int len) override;
             virtual void Write(array<byte>^ buf, int off, int len) override;
             virtual void Flush() override;
-
             void* ToPointer();
             static FrameTransport^ FromPointer(void* ptr);
-            
             void SendFrame();
             void ReceiveFrame();
 
+            SocketBuffer* _socketBuffer;
+            ThriftContext^ _context;
+            initonly TBinaryProtocol^ Protocol;
             int _header;
             int _position;
             bool _isOpen;
-            SocketBuffer* _socketBuffer;
-
-            ThriftContext^ _context;
-            initonly TBinaryProtocol^ Protocol;
 
         private:
             const char* _address;
@@ -120,6 +117,7 @@ namespace Thrift
         };
 
 
+        // Libuv callback handlers
         void NotifyCompleted(uv_async_t* notifier, int status);
         void OpenCompleted(uv_connect_t* connectRequest, int status);
         void SendFrameCompleted(uv_write_t* writeRequest, int status);

@@ -73,10 +73,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="ThriftClient.h" />
+    <ClInclude Include="Common.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Callback.cpp" />
+    <ClCompile Include="ContextQueue.cpp" />
+    <ClCompile Include="FrameTransport.cpp" />
     <ClCompile Include="ThriftClient.cpp" />
+    <ClCompile Include="ThriftContext.cpp" />
+    <ClCompile Include="UvException.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\libuv\libuv.vcxproj">
