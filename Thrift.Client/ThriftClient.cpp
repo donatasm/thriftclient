@@ -100,5 +100,20 @@ namespace Thrift
         {
             uv_run(_loop, UV_RUN_DEFAULT);
         }
+
+
+        void ThriftClient::RunAsync()
+        {
+            Thread^ loopThread = gcnew Thread(gcnew ThreadStart(this, &ThriftClient::RunInternal));
+            loopThread->IsBackground = true;
+            loopThread->Start();
+        }
+
+
+        void ThriftClient::RunInternal()
+        {
+            this->Run();
+            delete this;
+        }
     }
 }

@@ -11,7 +11,7 @@ namespace Thrift.Client.Run
         private static void Main()
         {
             var client = new ThriftClient();
-            new Thread(client.Run) { IsBackground = true }.Start();
+            client.RunAsync();
 
             const int requestCount = 1000;
 

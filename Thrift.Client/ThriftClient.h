@@ -11,6 +11,7 @@ using namespace System::IO;
 using namespace System::Collections::Concurrent;
 using namespace System::Collections::Generic;
 using namespace System::Runtime::InteropServices;
+using namespace System::Threading;
 using namespace Thrift::Protocol;
 using namespace Thrift::Transport;
 
@@ -34,6 +35,7 @@ namespace Thrift
             void Send(InputProtocol^ input, OutputProtocol^ output);
             void Stop();
             void Run();
+            void RunAsync();
         internal:
             initonly ContextQueue^ _contextQueue;
             initonly Queue<FrameTransport^>^ _transportPool;
@@ -41,6 +43,7 @@ namespace Thrift
             uv_loop_t* _loop;
             uv_async_t* _notifier;
             uv_async_t* _stop;
+            void RunInternal();
         };
 
 

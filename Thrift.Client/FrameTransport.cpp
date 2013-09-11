@@ -125,7 +125,6 @@ namespace Thrift
         }
 
 
-
         FrameTransport::FrameTransport(const char* address, int port, uv_loop_t* loop)
         {
             _handle = GCHandle::Alloc(this);
