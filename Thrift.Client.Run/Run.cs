@@ -61,7 +61,7 @@ namespace Thrift.Client.Run
             Console.WriteLine("95% {0}", elapsedAscending[(int)(requestCount * .95)]);
             Console.WriteLine("99% {0}", elapsedAscending[(int)(requestCount * .99)]);
 
-            client.Dispose();
+            client.Stop();
         }
     }
 }

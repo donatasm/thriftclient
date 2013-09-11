@@ -92,7 +92,7 @@ namespace Thrift
                 }
 
                 transport->_position = FRAME_HEADER_SIZE;
-                transport->_context->OutputProtocolCallback(transport->Protocol, nullptr);
+                transport->_context->_output(transport->_protocol, nullptr);
 
                 // if transport is still opened, return it to the pool
                 if (transport->IsOpen)
@@ -102,7 +102,7 @@ namespace Thrift
                     transport->_header = 0;
 
                     // return to the pool
-                    transport->_context->Client->TransportPool->Enqueue(transport);
+                    transport->_context->_client->_transportPool->Enqueue(transport);
                 }
             }
         }
@@ -138,7 +138,7 @@ namespace Thrift
             _isOpen = false;
             _socketBuffer = new SocketBuffer();
 
-            Protocol = gcnew TBinaryProtocol(this);
+            _protocol = gcnew TBinaryProtocol(this);
         }
 
 

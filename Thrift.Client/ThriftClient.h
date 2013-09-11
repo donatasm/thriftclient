@@ -32,13 +32,15 @@ namespace Thrift
             ThriftClient();
             ~ThriftClient();
             void Send(InputProtocol^ input, OutputProtocol^ output);
+            void Stop();
             void Run();
         internal:
-            initonly Queue<FrameTransport^>^ TransportPool;
+            initonly ContextQueue^ _contextQueue;
+            initonly Queue<FrameTransport^>^ _transportPool;
         private:
             uv_loop_t* _loop;
             uv_async_t* _notifier;
-            initonly ContextQueue^ _contextQueue;
+            uv_async_t* _stop;
         };
 
 
@@ -55,11 +57,11 @@ namespace Thrift
         {
         public:
             ThriftContext(InputProtocol^ input, OutputProtocol^ output, ThriftClient^ client);
-            const char* Address;
-            int Port;
-            initonly ThriftClient^ Client;
-            initonly InputProtocol^ InputProtocolCallback;
-            initonly OutputProtocol^ OutputProtocolCallback;
+            const char* _address;
+            int _port;
+            initonly ThriftClient^ _client;
+            initonly InputProtocol^ _input;
+            initonly OutputProtocol^ _output;
         };
 
 
@@ -104,7 +106,7 @@ namespace Thrift
 
             SocketBuffer* _socketBuffer;
             ThriftContext^ _context;
-            initonly TBinaryProtocol^ Protocol;
+            initonly TBinaryProtocol^ _protocol;
             int _header;
             int _position;
             bool _isOpen;

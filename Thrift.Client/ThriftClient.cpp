@@ -12,11 +12,11 @@ namespace Thrift
 
             while (contextQueue->TryDequeue(context))
             {
-                const char* address = context->Address;
-                int port = context->Port;
+                const char* address = context->_address;
+                int port = context->_port;
 
                 FrameTransport^ transport;
-                Queue<FrameTransport^>^ transportPool = context->Client->TransportPool;
+                Queue<FrameTransport^>^ transportPool = context->_client->_transportPool;
 
                 if (transportPool->Count > 0)
                 {
@@ -30,30 +30,52 @@ namespace Thrift
                 transport->_context = context;
 
                 // execute request callback
-                context->InputProtocolCallback(transport->Protocol);
+                context->_input(transport->_protocol);
             }
+        }
+
+
+        void StopCompleted(uv_async_t* stop, int status)
+        {
+            uv_stop(stop->loop);
         }
 
 
         ThriftClient::ThriftClient()
         {
             _contextQueue = gcnew ContextQueue();
-            TransportPool = gcnew Queue<FrameTransport^>();
+            _transportPool = gcnew Queue<FrameTransport^>();
 
             _loop = uv_loop_new();
 
             _notifier = new uv_async_t();
             _notifier->data = _contextQueue->ToPointer();
-
             uv_async_init(_loop, _notifier, NotifyCompleted);
+
+            _stop = new uv_async_t();
+            uv_async_init(_loop, _stop, StopCompleted);
         }
 
 
         ThriftClient::~ThriftClient()
         {
-            delete _notifier;
             uv_loop_delete(_loop);
+
+            delete _notifier;
+            delete _stop;
             delete _contextQueue;
+
+            while (_transportPool->Count > 0)
+            {
+                FrameTransport^ transport = _transportPool->Dequeue();
+                transport->Close();
+            }
+        }
+
+
+        void ThriftClient::Stop()
+        {
+            uv_async_send(_stop);
         }
 
 
