@@ -13,7 +13,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Common.h">
+    <ClInclude Include="ThriftClient.h">
       <Filter>Include</Filter>
     </ClInclude>
   </ItemGroup>

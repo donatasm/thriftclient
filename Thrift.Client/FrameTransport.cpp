@@ -1,4 +1,4 @@
-#include "Common.h"
+#include "ThriftClient.h"
 
 namespace Thrift
 {
