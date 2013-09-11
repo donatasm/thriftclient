@@ -6,7 +6,6 @@
     <ClCompile Include="FrameTransport.cpp" />
     <ClCompile Include="ThriftContext.cpp" />
     <ClCompile Include="ContextQueue.cpp" />
-    <ClCompile Include="Callback.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Include">

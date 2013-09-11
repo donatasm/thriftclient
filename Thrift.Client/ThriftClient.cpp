@@ -4,6 +4,37 @@ namespace Thrift
 {
     namespace Client
     {
+        void NotifyCompleted(uv_async_t* notifier, int status)
+        {
+            ContextQueue^ contextQueue = ContextQueue::FromPointer(notifier->data);
+
+            ThriftContext^ context;
+
+            while (contextQueue->TryDequeue(context))
+            {
+                const char* address = context->Address;
+                int port = context->Port;
+
+                FrameTransport^ transport;
+                Queue<FrameTransport^>^ transportPool = context->Client->TransportPool;
+
+                if (transportPool->Count > 0)
+                {
+                    transport = transportPool->Dequeue();
+                }
+                else
+                {
+                    transport = gcnew FrameTransport(address, port, notifier->loop);
+                }
+
+                transport->_context = context;
+
+                // execute request callback
+                context->InputProtocolCallback(transport->Protocol);
+            }
+        }
+
+
         ThriftClient::ThriftClient()
         {
             _contextQueue = gcnew ContextQueue();

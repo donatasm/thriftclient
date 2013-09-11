@@ -76,7 +76,6 @@
     <ClInclude Include="Common.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Callback.cpp" />
     <ClCompile Include="ContextQueue.cpp" />
     <ClCompile Include="FrameTransport.cpp" />
     <ClCompile Include="ThriftClient.cpp" />
