@@ -29,6 +29,8 @@ namespace Thrift.Client.Run
             Action<TProtocol, Exception, int> response = null;
             response = (output, exception, n) =>
                 {
+                    elapsed[n - 1] = stopwatch.ElapsedMilliseconds;
+
                     if (exception != null)
                     {
                         throw exception;
@@ -40,8 +42,11 @@ namespace Thrift.Client.Run
                     {
                         client.Send(i => request(i), (o, e) => response(o, e, n + 1));
                     }
+                    else
+                    {
+                        output.Transport.Close();
+                    }
 
-                    elapsed[n - 1] = stopwatch.ElapsedMilliseconds;
                 };
 
             client.Send((i) => request(i), (o, e) => response(o, e, 1));

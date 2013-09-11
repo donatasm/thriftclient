@@ -58,20 +58,16 @@ namespace Thrift
 
         void FrameTransport::Close()
         {
+            _isOpen = false;
+
             if (_handle.IsAllocated)
             {
                 _handle.Free();
             }
 
-            // TODO: close socket too
+            _socketBuffer->socket.data = _socketBuffer;
 
-            if (_socketBuffer != NULL)
-            {
-                delete _socketBuffer;
-                _socketBuffer = NULL;
-            }
-
-            _isOpen = false;
+            uv_close((uv_handle_t*)&_socketBuffer->socket, CloseCompleted);
         }
 
 

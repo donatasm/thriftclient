@@ -122,6 +122,7 @@ namespace Thrift
         void OpenCompleted(uv_connect_t* connectRequest, int status);
         void SendFrameCompleted(uv_write_t* writeRequest, int status);
         void ReceiveFrameCompleted(uv_stream_t* socket, ssize_t nread, const uv_buf_t* buffer);
+        void CloseCompleted(uv_handle_t* socket);
         void AllocateFrameBuffer(uv_handle_t* socket, size_t size, uv_buf_t* buffer);
     }
 }

@@ -125,16 +125,25 @@ namespace Thrift
                 transport->_position = FRAME_HEADER_SIZE;
                 transport->_context->OutputProtocolCallback(transport->Protocol, nullptr);
 
-                // prepare for the next frame to be written
-                transport->_position = FRAME_HEADER_SIZE;
-                transport->_header = 0;
-
                 // if transport is still opened, return it to the pool
                 if (transport->IsOpen)
                 {
+                    // prepare for the next frame to be written
+                    transport->_position = FRAME_HEADER_SIZE;
+                    transport->_header = 0;
+
+                    // return to the pool
                     transport->_context->Client->TransportPool->Enqueue(transport);
                 }
             }
+        }
+
+
+        void CloseCompleted(uv_handle_t* socket)
+        {
+            SocketBuffer* socketBuffer = (SocketBuffer*)socket->data;
+
+            delete socketBuffer;
         }
 
 
